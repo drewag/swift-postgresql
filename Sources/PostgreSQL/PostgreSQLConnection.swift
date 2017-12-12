@@ -62,6 +62,7 @@ public final class PostgreSQLConnection: Connection {
         )
 
         guard PQstatus(newConnection) == CONNECTION_OK else {
+            PQfinish(newConnection)
             throw SQLError(connection: newConnection)
         }
 
