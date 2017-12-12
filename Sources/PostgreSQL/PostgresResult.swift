@@ -16,6 +16,10 @@ public final class PostgresResultDataProvider: ResultDataProvider {
         self.pointer = pointer
     }
 
+    deinit {
+        PQclear(self.pointer)
+    }
+
     public var countAffected: Int {
         guard let raw = PQcmdTuples(self.pointer) else {
             return 0
