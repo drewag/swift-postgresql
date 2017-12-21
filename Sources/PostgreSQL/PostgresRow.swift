@@ -24,8 +24,8 @@ public final class PostgresRow<Query: RowReturningQuery>: Row<Query> {
         return Array(self.resultProvider.columns.keys)
     }
 
-    public override subscript(string: String) -> Data? {
-        guard let column = self.resultProvider.columns[string]
+    public override func data(forColumnNamed name: String) throws -> Data? {
+        guard let column = self.resultProvider.columns[name]
             , PQgetisnull(self.resultProvider.pointer, self.row, column) == 0
             else
         {

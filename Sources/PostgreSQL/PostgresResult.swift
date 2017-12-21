@@ -43,17 +43,27 @@ public final class PostgresResultDataProvider: ResultDataProvider {
 public final class PostgresRowSequence<Query: RowReturningQuery>: RowSequence<Query> {
     let resultProvider: PostgresResultDataProvider
 
+    var currentRow: Int = -1
+
     init(resultProvider: PostgresResultDataProvider) {
         self.resultProvider = resultProvider
 
         super.init()
     }
 
-    public override var count: Int {
+    public override func next() -> Row<Query>? {
+        guard self.currentRow + 1 < self.count else {
+            return nil
+        }
+        self.currentRow += 1
+        return self[self.currentRow]
+    }
+
+    public var count: Int {
         return Int(PQntuples(self.resultProvider.pointer))
     }
 
-    public override subscript(i: Int) -> Row<Query> {
+    public subscript(i: Int) -> Row<Query> {
         if i >= self.count {
             fatalError("Out of bounds")
         }

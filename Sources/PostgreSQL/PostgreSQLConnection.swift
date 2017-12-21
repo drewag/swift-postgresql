@@ -78,7 +78,7 @@ public final class PostgreSQLConnection: Connection {
         self.pointer = nil
     }
 
-    public func run(statement: String, arguments: [Value]) throws {
+    public func run(_ statement: String, arguments: [Value]) throws {
         let pointer = try self.execute(statement: statement, arguments: arguments)
         let result = PostgresResultDataProvider(pointer: pointer)
         switch result.internalStatus {
@@ -89,14 +89,14 @@ public final class PostgreSQLConnection: Connection {
         }
     }
 
-    public func run<Query: AnyQuery>(statement: String, arguments: [Value]) throws -> Result<Query> {
-        let pointer = try self.execute(statement: statement, arguments: arguments)
+    public func execute<Query: AnyQuery>(_ query: Query) throws -> Result<Query> {
+        let pointer = try self.execute(statement: query.statement, arguments: query.arguments)
         let provider = PostgresResultDataProvider(pointer: pointer)
 
         if Query.self is RowReturningQuery.Type {
             switch provider.internalStatus {
             case .tuplesOk:
-                return Result(dataProvider: provider)
+                return Result(dataProvider: provider, query: query)
             case .nonFatalError, .fatalError, .badResponse:
                 throw self.error(provider.errorDescription)
             default:
@@ -106,7 +106,7 @@ public final class PostgreSQLConnection: Connection {
         else {
             switch provider.internalStatus {
             case .commandOk:
-                return Result(dataProvider: provider)
+                return Result(dataProvider: provider, query: query)
             case .nonFatalError, .fatalError, .badResponse:
                 throw self.error(provider.errorDescription)
             default:
@@ -132,8 +132,30 @@ private extension PostgreSQLConnection {
                 continue
             case .bool(let value):
                 data = AnyCollection((value ? "true" : "false").utf8CString)
-            case .raw(let string):
-                data = AnyCollection(string.utf8CString)
+            case .float(let value):
+                data = AnyCollection("\(value)".utf8CString)
+            case .double(let value):
+                data = AnyCollection("\(value)".utf8CString)
+            case .int(let value):
+                data = AnyCollection("\(value)".utf8CString)
+            case .int8(let value):
+                data = AnyCollection("\(value)".utf8CString)
+            case .int16(let value):
+                data = AnyCollection("\(value)".utf8CString)
+            case .int32(let value):
+                data = AnyCollection("\(value)".utf8CString)
+            case .int64(let value):
+                data = AnyCollection("\(value)".utf8CString)
+            case .uint(let value):
+                data = AnyCollection("\(value)".utf8CString)
+            case .uint8(let value):
+                data = AnyCollection("\(value)".utf8CString)
+            case .uint16(let value):
+                data = AnyCollection("\(value)".utf8CString)
+            case .uint32(let value):
+                data = AnyCollection("\(value)".utf8CString)
+            case .uint64(let value):
+                data = AnyCollection("\(value)".utf8CString)
             case .string(let string):
                 data = AnyCollection(string.utf8CString)
             case .data(let data):
