@@ -200,6 +200,10 @@ private extension PostgreSQLConnection {
     }
 
     func replaceParametersWithNumbers(in statement: String) -> String {
+        let statement = statement.replacingOccurrences(
+            of: "====to_timestamp====(%@)",
+            with: "to_timestamp(%@, 'YYYY-MM-DD HH24:MI:SS.USZ')"
+        )
         var output: String = ""
         var varCount = 1
         for component in statement.components(separatedBy: "%@") {
@@ -210,6 +214,7 @@ private extension PostgreSQLConnection {
 
             output += component
         }
+
         return output
     }
 }
