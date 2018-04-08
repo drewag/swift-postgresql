@@ -20,12 +20,10 @@ extension SQLError {
         }
 
         if let message = message {
-            self.message = message
-            self.moreInformation = moreInformation
+            self.init(message: message, moreInformation: moreInformation)
         }
         else {
-            self.message = moreInformation ?? "Unknown Error"
-            self.moreInformation = nil
+            self.init(message: moreInformation ?? "Unknown Error", moreInformation: nil)
         }
     }
 }

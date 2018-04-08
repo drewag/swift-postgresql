@@ -167,7 +167,7 @@ private extension PostgreSQLConnection {
 
             let pointer = UnsafeMutablePointer<Int8>.allocate(capacity: Int(data.count))
             deallocators.append {
-                pointer.deallocate(capacity: Int(data.count))
+                pointer.deallocate()
             }
 
             for (index, byte) in data.enumerated() {
