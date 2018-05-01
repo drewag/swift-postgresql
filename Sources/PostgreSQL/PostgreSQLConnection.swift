@@ -203,6 +203,9 @@ private extension PostgreSQLConnection {
         let statement = statement.replacingOccurrences(
             of: "====to_timestamp====(%@)",
             with: "to_timestamp(%@, 'YYYY-MM-DD HH24:MI:SS.USZ')"
+        ).replacingOccurrences(
+            of: "====to_local_timestamp====(%@)",
+            with: "to_timestamp(%@, 'YYYY-MM-DD HH24:MI:SS.US')"
         )
         var output: String = ""
         var varCount = 1
