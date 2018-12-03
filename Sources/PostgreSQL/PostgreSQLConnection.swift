@@ -232,7 +232,7 @@ private extension String {
         while let range = updated.range(of: old + "(") {
             var afterThisRange = updated
             afterThisRange.replaceSubrange(range, with: "\(new)(")
-            guard let closeRange = afterThisRange.range(of: ")") else {
+            guard let closeRange = afterThisRange.range(of: ")", options: [], range: range.lowerBound ..< afterThisRange.endIndex, locale: nil) else {
                 return updated
             }
             updated = afterThisRange
