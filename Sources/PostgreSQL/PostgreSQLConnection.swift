@@ -178,14 +178,14 @@ private extension PostgreSQLConnection {
         }
 
         let statement = self.replaceParametersWithNumbers(in: statement)
-        let paramStrings: [String] = parameterData.map({ pointer in
-            guard let pointer = pointer else {
-                return "NULL"
-            }
-            return String(cString: pointer)
-        })
-        print(statement)
-        print(paramStrings)
+//        let paramStrings: [String] = parameterData.map({ pointer in
+//            guard let pointer = pointer else {
+//                return "NULL"
+//            }
+//            return String(cString: pointer)
+//        })
+//        print(statement)
+//        print(paramStrings)
 
         return PQexecParams(
             self.pointer,
