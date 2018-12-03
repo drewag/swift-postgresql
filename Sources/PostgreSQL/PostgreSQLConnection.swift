@@ -178,14 +178,14 @@ private extension PostgreSQLConnection {
         }
 
         let statement = self.replaceParametersWithNumbers(in: statement)
-//        let paramStrings: [String] = parameterData.map({ pointer in
-//            guard let pointer = pointer else {
-//                return "NULL"
-//            }
-//            return String(cString: pointer)
-//        })
-//        print(statement)
-//        print(paramStrings)
+        let paramStrings: [String] = parameterData.map({ pointer in
+            guard let pointer = pointer else {
+                return "NULL"
+            }
+            return String(cString: pointer)
+        })
+        print(statement)
+        print(paramStrings)
 
         return PQexecParams(
             self.pointer,
@@ -200,13 +200,17 @@ private extension PostgreSQLConnection {
     }
 
     func replaceParametersWithNumbers(in statement: String) -> String {
-        let statement = statement.replacingOccurrences(
-            of: "====to_timestamp====(%@)",
-            with: "to_timestamp(%@, 'YYYY-MM-DD HH24:MI:SS.USZ')"
-        ).replacingOccurrences(
-            of: "====to_local_timestamp====(%@)",
-            with: "to_timestamp(%@, 'YYYY-MM-DD HH24:MI:SS.US')"
-        )
+        let statement = statement
+            .renamingFunction(
+                named: "====to_timestamp====",
+                to: "to_timestamp",
+                addingParameters: ["'YYYY-MM-DD HH24:MI:SS.USZ'"]
+            )
+            .renamingFunction(
+                named: "====to_local_timestamp====",
+                to: "to_timestamp",
+                addingParameters: ["'YYYY-MM-DD HH24:MI:SS.US'"]
+            )
         var output: String = ""
         var varCount = 1
         for component in statement.components(separatedBy: "%@") {
@@ -219,5 +223,24 @@ private extension PostgreSQLConnection {
         }
 
         return output
+    }
+}
+
+private extension String {
+    func renamingFunction(named old: String, to new: String, addingParameters: [String]) -> String {
+        var updated = self
+        while let range = updated.range(of: old + "(") {
+            var afterThisRange = updated
+            afterThisRange.replaceSubrange(range, with: "\(new)(")
+            guard let closeRange = afterThisRange.range(of: ")") else {
+                return updated
+            }
+            updated = afterThisRange
+            guard !addingParameters.isEmpty else {
+                continue
+            }
+            updated.replaceSubrange(closeRange, with: "," + addingParameters.joined(separator: ",") + ")")
+        }
+        return updated
     }
 }
