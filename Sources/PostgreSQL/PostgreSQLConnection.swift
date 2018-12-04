@@ -114,6 +114,32 @@ public final class PostgreSQLConnection: Connection {
             }
         }
     }
+
+    internal func replaceParametersWithNumbers(in statement: String) -> String {
+        let statement = statement
+            .renamingFunction(
+                named: "====to_timestamp====",
+                to: "to_timestamp",
+                addingParameters: ["'YYYY-MM-DD HH24:MI:SS.USZ'"]
+            )
+            .renamingFunction(
+                named: "====to_local_timestamp====",
+                to: "to_timestamp",
+                addingParameters: ["'YYYY-MM-DD HH24:MI:SS.US'"]
+        )
+        var output: String = ""
+        var varCount = 1
+        for component in statement.components(separatedBy: "%@") {
+            if !output.isEmpty {
+                output += "$\(varCount)"
+                varCount += 1
+            }
+
+            output += component
+        }
+
+        return output
+    }
 }
 
 private extension PostgreSQLConnection {
@@ -198,32 +224,6 @@ private extension PostgreSQLConnection {
             0
         )
     }
-
-    func replaceParametersWithNumbers(in statement: String) -> String {
-        let statement = statement
-            .renamingFunction(
-                named: "====to_timestamp====",
-                to: "to_timestamp",
-                addingParameters: ["'YYYY-MM-DD HH24:MI:SS.USZ'"]
-            )
-            .renamingFunction(
-                named: "====to_local_timestamp====",
-                to: "to_timestamp",
-                addingParameters: ["'YYYY-MM-DD HH24:MI:SS.US'"]
-            )
-        var output: String = ""
-        var varCount = 1
-        for component in statement.components(separatedBy: "%@") {
-            if !output.isEmpty {
-                output += "$\(varCount)"
-                varCount += 1
-            }
-
-            output += component
-        }
-
-        return output
-    }
 }
 
 private extension String {
@@ -232,14 +232,34 @@ private extension String {
         while let range = updated.range(of: old + "(") {
             var afterThisRange = updated
             afterThisRange.replaceSubrange(range, with: "\(new)(")
-            guard let closeRange = afterThisRange.range(of: ")", options: [], range: range.lowerBound ..< afterThisRange.endIndex, locale: nil) else {
+
+            var index = afterThisRange.index(range.lowerBound, offsetBy: new.count + 1)
+            var openCount = 1
+            findClose: while index != afterThisRange.endIndex {
+                switch afterThisRange[index] {
+                case "(":
+                    openCount += 1
+                case ")":
+                    openCount -= 1
+                    if openCount == 0 {
+                        break findClose
+                    }
+                default:
+                    break
+                }
+
+                index = afterThisRange.index(after: index)
+            }
+
+            guard index != afterThisRange.endIndex else {
                 return updated
             }
+
             updated = afterThisRange
             guard !addingParameters.isEmpty else {
                 continue
             }
-            updated.replaceSubrange(closeRange, with: "," + addingParameters.joined(separator: ",") + ")")
+            updated.insert(contentsOf: "," + addingParameters.joined(separator: ","), at: index)
         }
         return updated
     }
