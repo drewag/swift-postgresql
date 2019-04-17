@@ -184,10 +184,16 @@ private extension PostgreSQLConnection {
                 data = AnyCollection("\(value)".utf8CString)
             case .string(let string):
                 data = AnyCollection(string.utf8CString)
-            case .data(let data):
-                data.withUnsafeBytes({ pointer in
-                    parameterData.append(pointer)
-                })
+            case .data(let raw):
+                let pointer = UnsafeMutablePointer<Int8>.allocate(capacity: raw.count + 1)
+                deallocators.append {
+                    pointer.deallocate()
+                }
+                for (index, byte) in raw.enumerated() {
+                    pointer[index] = Int8(bitPattern: byte)
+                }
+                pointer[raw.count] = 0
+                parameterData.append(pointer)
                 continue
             }
 
