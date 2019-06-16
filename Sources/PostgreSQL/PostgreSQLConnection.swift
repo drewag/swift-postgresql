@@ -182,6 +182,10 @@ private extension PostgreSQLConnection {
                 data = AnyCollection("\(value)".utf8CString)
             case .uint64(let value):
                 data = AnyCollection("\(value)".utf8CString)
+            case let .point(x, y):
+                data = AnyCollection("\(x),\(y)".utf8CString)
+            case let .time(hour, minute, second):
+                data = AnyCollection("\(hour):\(minute):\(second)".utf8CString)
             case .string(let string):
                 data = AnyCollection(string.utf8CString)
             case .data(let raw):
