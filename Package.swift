@@ -14,7 +14,7 @@ let package = Package(
     ],
     dependencies: [
         // Dependencies declare other packages that this package depends on.
-        .package(url: "https://github.com/drewag/swift-sql.git", from: "4.0.0"),
+        .package(url: "https://github.com/drewag/swift-sql.git", from: "5.0.0"),
         .package(url: "https://github.com/vapor-community/cpostgresql.git", from: "2.0.0"),
     ],
     targets: [
