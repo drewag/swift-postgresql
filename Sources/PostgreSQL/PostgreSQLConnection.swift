@@ -92,26 +92,26 @@ public final class PostgreSQLConnection: Connection {
     public func execute<Query: AnyQuery>(_ query: Query) throws -> Result<Query> {
         let pointer = try self.execute(statement: query.statement, arguments: query.arguments)
         let provider = PostgresResultDataProvider(pointer: pointer)
-
-        if Query.self is RowReturningQuery.Type {
-            switch provider.internalStatus {
-            case .tuplesOk:
-                return Result(dataProvider: provider, query: query)
-            case .nonFatalError, .fatalError, .badResponse:
-                throw self.error(provider.errorDescription)
-            default:
-                throw self.error("Unexpected status: '\(provider.internalStatus.summary)'")
-            }
+        switch provider.internalStatus {
+        case .commandOk:
+            return Result(dataProvider: provider, query: query)
+        case .nonFatalError, .fatalError, .badResponse:
+            throw self.error(provider.errorDescription)
+        default:
+            throw self.error("Unexpected status: '\(provider.internalStatus.summary)'")
         }
-        else {
-            switch provider.internalStatus {
-            case .commandOk:
-                return Result(dataProvider: provider, query: query)
-            case .nonFatalError, .fatalError, .badResponse:
-                throw self.error(provider.errorDescription)
-            default:
-                throw self.error("Unexpected status: '\(provider.internalStatus.summary)'")
-            }
+    }
+
+    public func execute<Query: RowReturningQuery>(_ query: Query) throws -> RowsResult<Query> {
+        let pointer = try self.execute(statement: query.statement, arguments: query.arguments)
+        let provider = PostgresResultDataProvider(pointer: pointer)
+        switch provider.internalStatus {
+        case .tuplesOk:
+            return RowsResult(dataProvider: provider, query: query)
+        case .nonFatalError, .fatalError, .badResponse:
+            throw self.error(provider.errorDescription)
+        default:
+            throw self.error("Unexpected status: '\(provider.internalStatus.summary)'")
         }
     }
 
