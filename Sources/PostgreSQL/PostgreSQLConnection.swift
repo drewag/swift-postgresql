@@ -151,6 +151,7 @@ private extension PostgreSQLConnection {
         var parameterFormats = [Int32]()
         var lengths = [Int32]()
         var deallocators = [() -> ()]()
+        var temps = [[UInt8]]()
         defer { deallocators.forEach { $0() } }
 
         for parameter in arguments {
@@ -194,17 +195,9 @@ private extension PostgreSQLConnection {
             case .string(let string):
                 data = AnyCollection(string.utf8CString)
             case .data(let raw):
-                let pointer = UnsafeMutablePointer<Int8>.allocate(capacity: raw.count + 1)
-                defer {
-                    pointer.deallocate()
-                }
-
-                for (index, byte) in raw.enumerated() {
-                    pointer[index] = Int8(bitPattern: byte)
-                }
-                pointer[raw.count] = 0
-
-                parameterData.append(pointer)
+                let bytes = raw.map { $0 }
+                temps.append(bytes)
+                parameterData.append(UnsafePointer<Int8>(OpaquePointer(temps.last!)))
                 parameterFormats.append(1)
                 lengths.append(Int32(raw.count))
                 continue
