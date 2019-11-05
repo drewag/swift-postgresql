@@ -126,7 +126,8 @@ public final class PostgreSQLConnection: Connection {
                 named: "====to_local_timestamp====",
                 to: "to_timestamp",
                 addingParameters: ["'YYYY-MM-DD HH24:MI:SS.US'"]
-        )
+            )
+            .replacingOccurrences(of: "====data_type====", with: "bytea")
         var output: String = ""
         var varCount = 1
         for component in statement.components(separatedBy: "%@") {
@@ -147,6 +148,8 @@ private extension PostgreSQLConnection {
         try self.connect()
 
         var parameterData = [UnsafePointer<Int8>?]()
+        var parameterFormats = [Int32]()
+        var lengths = [Int32]()
         var deallocators = [() -> ()]()
         defer { deallocators.forEach { $0() } }
 
@@ -155,6 +158,8 @@ private extension PostgreSQLConnection {
             switch parameter {
             case .null:
                 parameterData.append(nil)
+                parameterFormats.append(0)
+                lengths.append(0)
                 continue
             case .bool(let value):
                 data = AnyCollection((value ? "true" : "false").utf8CString)
@@ -190,18 +195,22 @@ private extension PostgreSQLConnection {
                 data = AnyCollection(string.utf8CString)
             case .data(let raw):
                 let pointer = UnsafeMutablePointer<Int8>.allocate(capacity: raw.count + 1)
-                deallocators.append {
+                defer {
                     pointer.deallocate()
                 }
+
                 for (index, byte) in raw.enumerated() {
                     pointer[index] = Int8(bitPattern: byte)
                 }
                 pointer[raw.count] = 0
+
                 parameterData.append(pointer)
+                parameterFormats.append(1)
+                lengths.append(Int32(raw.count))
                 continue
             }
 
-            let pointer = UnsafeMutablePointer<Int8>.allocate(capacity: Int(data.count))
+            let pointer = UnsafeMutablePointer<Int8>.allocate(capacity: data.count)
             deallocators.append {
                 pointer.deallocate()
             }
@@ -211,6 +220,8 @@ private extension PostgreSQLConnection {
             }
 
             parameterData.append(pointer)
+            parameterFormats.append(0)
+            lengths.append(0)
         }
 
         let statement = self.replaceParametersWithNumbers(in: statement)
@@ -229,8 +240,8 @@ private extension PostgreSQLConnection {
             Int32(parameterData.count),
             nil,
             parameterData,
-            nil,
-            nil,
+            &lengths,
+            &parameterFormats,
             0
         )
     }

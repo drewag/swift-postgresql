@@ -37,6 +37,39 @@ public final class PostgresRow<Query: RowReturningQuery>: Row<Query> {
             return Data()
         }
 
-        return Data(bytes: raw, count: Int(length))
+        let data = Data(bytes: raw, count: Int(length))
+        switch PQftype(self.resultProvider.pointer, column) {
+        case 17:
+            guard let hex = String(data: data, encoding: .utf8)
+                , let data = Data(hexString: hex)
+                else
+            {
+                throw SQLError(message: "invalid data for '\(name)'")
+            }
+            return data
+        default:
+            return data
+        }
+    }
+}
+
+private extension Data {
+    init?(hexString: String) {
+        guard hexString.hasPrefix("\\x") else {
+            return nil
+        }
+        let length = (hexString.count - 2) / 2
+        var data = Data(capacity: length)
+        for i in 0 ..< length {
+            let j = hexString.index(hexString.startIndex, offsetBy: i * 2 + 2)
+            let k = hexString.index(j, offsetBy: 2)
+            let bytes = hexString[j..<k]
+            if var byte = UInt8(bytes, radix: 16) {
+                data.append(&byte, count: 1)
+            } else {
+                return nil
+            }
+        }
+        self = data
     }
 }
