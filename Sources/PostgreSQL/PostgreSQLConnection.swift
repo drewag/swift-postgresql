@@ -120,12 +120,12 @@ public final class PostgreSQLConnection: Connection {
             .renamingFunction(
                 named: "====to_timestamp====",
                 to: "to_timestamp",
-                addingParameters: ["'YYYY-MM-DD HH24:MI:SS.USZ'"]
+                addingParameters: ["'YYYY-MM-DDTHH24:MI:SS.USZ'"]
             )
             .renamingFunction(
                 named: "====to_local_timestamp====",
                 to: "to_timestamp",
-                addingParameters: ["'YYYY-MM-DD HH24:MI:SS.US'"]
+                addingParameters: ["'YYYY-MM-DDTHH24:MI:SS.US'"]
             )
             .replacingOccurrences(of: "====data_type====", with: "bytea")
         var output: String = ""
