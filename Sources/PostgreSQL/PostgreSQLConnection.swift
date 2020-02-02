@@ -116,16 +116,22 @@ public final class PostgreSQLConnection: Connection {
     }
 
     internal func replaceParametersWithNumbers(in statement: String) -> String {
+        let dateFormat: String
+        #if os(Linux)
+            dateFormat = "'YYYY-MM-DD HH24:MI:SS.USZ'"
+        #else
+            dateFormat = "'YYYY-MM-DDTHH24:MI:SS.USZ'"
+        #endif
         let statement = statement
             .renamingFunction(
                 named: "====to_timestamp====",
                 to: "to_timestamp",
-                addingParameters: ["'YYYY-MM-DDTHH24:MI:SS.USZ'"]
+                addingParameters: [dateFormat]
             )
             .renamingFunction(
                 named: "====to_local_timestamp====",
                 to: "to_timestamp",
-                addingParameters: ["'YYYY-MM-DDTHH24:MI:SS.US'"]
+                addingParameters: [dateFormat]
             )
             .replacingOccurrences(of: "====data_type====", with: "bytea")
         var output: String = ""
